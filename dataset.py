@@ -31,18 +31,18 @@ class COCOSegmentation(Dataset):
         # Create segmentation mask
         mask = np.zeros((img_info['height'], img_info['width']))
         for i in range(len(anns)):
+            print(f"mask: {mask}")
+            print(f"anns[i]: {anns[i]}")
+            print(f"anns[i]['category_id']: {anns[i]['category_id']}")
             mask = np.maximum(mask, coco.annToMask(anns[i]) * anns[i]['category_id'])  # Use category ID for pixel value
 
         if self.transform:
             img = self.transform(img)
-            # Resize the mask
-            image_size = img.shape[-1]
-            mask = transforms.Resize((image_size, image_size), 
-                                    interpolation=transforms.InterpolationMode.NEAREST)(Image.fromarray(mask)) 
-            mask = np.array(mask) # Convert back to numpy array
-
-        # Convert mask to PyTorch tensor
-        mask = torch.from_numpy(mask).long()  # Ensure 'long' data type for class indices
+            mask_transform = transforms.Compose([
+                transforms.Resize((img.shape[-1], img.shape[-2]), interpolation=transforms.InterpolationMode.NEAREST),
+                transforms.ToTensor()
+            ])
+            mask = mask_transform(Image.fromarray(mask))
 
         return img, mask
 
@@ -55,12 +55,12 @@ def visualize_segmentation(image, mask):
 
     Args:
       image: The original image as a PyTorch tensor (C, H, W).
-      mask: The segmentation mask as a PyTorch tensor (H, W).
+      mask: The segmentation mask as a PyTorch tensor (C, H, W).
     """
 
     # Convert image and mask to NumPy arrays
     image_np = image.permute(1, 2, 0).cpu().detach().numpy()
-    mask_np = mask.cpu().detach().numpy()
+    mask_np = mask.squeeze(0).cpu().detach().numpy().squeeze()
 
     # Get the unique class IDs in the mask (excluding background, usually 0)
     class_ids = np.unique(mask_np)
@@ -75,11 +75,14 @@ def visualize_segmentation(image, mask):
         colored_mask[mask_np == class_id] = cmap(i)[:3]  # Take only RGB values
 
     # Overlay the colored mask on the original image with some transparency
-    plt.figure(figsize=(10, 5))
-    plt.imshow(image_np)
-    plt.imshow(colored_mask, alpha=0.5)  # Adjust alpha for transparency
-    plt.title("Segmentation Visualization")
-    plt.axis('off')
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8))
+    ax1.imshow(image_np)
+    ax1.set_title("Original Image")
+    ax1.axis('off')
+    # ax2.imshow(image_np)
+    ax2.imshow(colored_mask, alpha=1)
+    ax2.set_title("Segmentation Mask")
+    ax2.axis('off')
     plt.show()
 
 def download_and_extract(coco_path, url, target_dir):
