@@ -30,10 +30,8 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 
-# updated version from https://github.com/gngdb/pytorch-pca/blob/main/pca.py
-
-
 class PCA_toTest(nn.Module):
+    # updated version from https://github.com/gngdb/pytorch-pca/blob/main/pca.py
     def __init__(self, n_components):
         super().__init__()
         self.n_components = n_components
@@ -125,9 +123,9 @@ class PrivacyHead(nn.Module):
         return privacy_maps
 
 
-class PrivacyDINO(nn.Module):
+class NasconDino(nn.Module):
     def __init__(self, repo_name="facebookresearch/dinov2", model_name="dinov2_vitb14", pretrained=True, pca_components=768, num_classes=10):
-        super(PrivacyDINO, self).__init__()
+        super(NasconDino, self).__init__()
 
         self.original_model = torch.hub.load(repo_name, model_name)
 
